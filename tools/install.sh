@@ -433,22 +433,22 @@ detect_gnss() {
                     detected_gnss[0]=$port
                     detected_gnss[1]='u-blox'
                     detected_gnss[2]=$port_speed
-                    #echo 'U-blox ZED-F9P DETECTED ON ' $port ' at ' $port_speed
+                    echo 'U-blox ZED-F9P DETECTED ON ' $port ' at ' $port_speed
                     break
                 fi
-
                 # Detect Quectel LC29H-BS receivers using nmea.py
-                if [[ $(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/$port $port_speed 3 2>/dev/null) =~ 'LC29HBS' ]]; then
+                elif [[ $(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/$port $port_speed 3 2>/dev/null) =~ 'LC29HBS' ]]; then
                     detected_gnss[0]=$port
                     detected_gnss[1]='LC29H-BS'
                     detected_gnss[2]=$port_speed
-                    #echo 'Quectel LC29H-BS DETECTED ON ' $port ' at ' $port_speed
+                    echo 'Quectel LC29H-BS DETECTED ON ' $port ' at ' $port_speed
                     break
+
                 elif { model=$(python3 "${rtkbase_path}"/tools/unicore_tool.py --port /dev/$port --baudrate $port_speed --command get_model 2>/dev/null) ; [[ "${model}" == 'UM98'[0-2] ]] ;}; then
                     detected_gnss[0]=$port
                     detected_gnss[1]='unicore'
                     detected_gnss[2]=$port_speed
-                    #echo 'Unicore ' "${model}" ' DETECTED ON '$port $port_speed
+                    echo 'Unicore ' "${model}" ' DETECTED ON '$port $port_speed
                     break
                 fi
                 sleep 0.1
@@ -577,30 +577,30 @@ configure_gnss(){
 
             return $?
 
-          elif [[ $(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 2>/dev/null) =~ 'LC29HBS' ]]; then
-            # Factory reset and configure the module
-            python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Factory_Defaults.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
-            python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Set_Baud.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
-            python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Save.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
-            python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Reboot.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+        elif [[ $(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 2>/dev/null) =~ 'LC29HBS' ]]; then
+          # Factory reset and configure the module
+          python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Factory_Defaults.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+          python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Set_Baud.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+          python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Save.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+          python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Reboot.txt /dev/"${com_port}" ${com_port_settings%%:*} 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
 
-            # Speed has now been configured to 921600
-            speed=921600
-            version_str="$(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/"${com_port}" ${speed} 3 2>/dev/null)"
-            firmware="`echo "$version_str" | cut -d , -f 2`"
-            if [[ -z "$version_str" ]]; then
-              echo "Could not get LC29HBS version string after rebooting the module, try power cycling the module."
-              return 1
-            fi
-            sudo -u "${RTKBASE_USER}" sed -i s/^receiver_firmware=.*/receiver_firmware=\'${firmware}\'/ "${rtkbase_path}"/settings.conf && \
-            sudo -u "${RTKBASE_USER}" sed -i s/^com_port_settings=.*/com_port_settings=\'921600:8:n:1\'/ "${rtkbase_path}"/settings.conf && \
-            sudo -u "${RTKBASE_USER}" sed -i s/^receiver=.*/receiver=\'Quectel LC29HBS\'/ "${rtkbase_path}"/settings.conf && \
-            sudo -u "${RTKBASE_USER}" sed -i s/^receiver_format=.*/receiver_format=\'rtcm3\'/ "${rtkbase_path}"/settings.conf
-            return $?
-          else
-            echo 'Failed to configure the Gnss receiver'
+          # Speed has now been configured to 921600
+          speed=921600
+          version_str="$(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/"${com_port}" ${speed} 3 2>/dev/null)"
+          firmware="`echo "$version_str" | cut -d , -f 2`"
+          if [[ -z "$version_str" ]]; then
+            echo "Could not get LC29HBS version string after rebooting the module, try power cycling the module."
             return 1
           fi
+          sudo -u "${RTKBASE_USER}" sed -i s/^receiver_firmware=.*/receiver_firmware=\'${firmware}\'/ "${rtkbase_path}"/settings.conf && \
+          sudo -u "${RTKBASE_USER}" sed -i s/^com_port_settings=.*/com_port_settings=\'921600:8:n:1\'/ "${rtkbase_path}"/settings.conf && \
+          sudo -u "${RTKBASE_USER}" sed -i s/^receiver=.*/receiver=\'Quectel LC29HBS\'/ "${rtkbase_path}"/settings.conf && \
+          sudo -u "${RTKBASE_USER}" sed -i s/^receiver_format=.*/receiver_format=\'rtcm3\'/ "${rtkbase_path}"/settings.conf
+          return $?
+        else
+          echo 'Failed to configure the Gnss receiver'
+          return 1
+        fi
 
         elif { model=$(python3 "${rtkbase_path}"/tools/unicore_tool.py --port /dev/${com_port} --baudrate ${com_port_settings%%:*} --command get_model 2>/dev/null) ; [[ "${model}" == 'UM98'[0-2] ]] ;}
           then
