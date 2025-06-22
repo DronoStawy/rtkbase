@@ -215,7 +215,8 @@ _rtkbase_repo(){
 
 _rtkbase_release(){
     #Get rtkbase latest release
-    sudo -u "${RTKBASE_USER}" wget https://github.com/stefal/rtkbase/releases/latest/download/rtkbase.tar.gz -O rtkbase.tar.gz
+    #sudo -u "${RTKBASE_USER}" wget https://github.com/stefal/rtkbase/releases/latest/download/rtkbase.tar.gz -O rtkbase.tar.gz
+    sudo -u "${RTKBASE_USER}" wget https://github.com/DronoStawy/rtkbase/releases/latest/download/rtkbase.tar.gz -O rtkbase.tar.gz
     sudo -u "${RTKBASE_USER}" tar -xvf rtkbase.tar.gz
     _add_rtkbase_path_to_environment
 
@@ -435,7 +436,6 @@ detect_gnss() {
                     detected_gnss[2]=$port_speed
                     echo 'U-blox ZED-F9P DETECTED ON ' $port ' at ' $port_speed
                     break
-                fi
                 # Detect Quectel LC29H-BS receivers using nmea.py
                 elif [[ $(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/$port $port_speed 3 2>/dev/null) =~ 'LC29HBS' ]]; then
                     detected_gnss[0]=$port
