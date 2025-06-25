@@ -1,2 +1,2 @@
 #Save parameters
-$PQTMSAVEPAR*5A
+$PQTMSAVEPAR
