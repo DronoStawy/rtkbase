@@ -1,35 +1,35 @@
 #Enable MSM7 messages
-$PAIR432,1
+$PAIR432,1*22
 
 #Enable Station Reference Message 1005
-$PAIR434,1
+$PAIR434,1*24
 
 #Enable Ephemeris messages
-$PAIR436,1
+$PAIR436,1*26
 
 #Enable NMEA GGA Time, position, and fix related data
-$PAIR062,0,1
+$PAIR062,0,1*3F
 
 #Enable NMEA GLL Position data: position fix, time of position fix, and status
-$PAIR062,1,1
+$PAIR062,1,1*3E
 
 #Enable NMEA GSA GPS DOP and active satellites
-$PAIR062,2,1
+$PAIR062,2,1*3D
 
 #Enable NMEA GSV Satellite information
-$PAIR062,3,1
+$PAIR062,3,1*3C
 
 #Enable NMEA RMC Position, velocity, and time
-$PAIR062,4,1
+$PAIR062,4,1*3B
 
 #Enable NMEA VTG Track made good and speed over ground
-$PAIR062,5,1
+$PAIR062,5,1*3A
 
 #Enable NMEA ZDA UTC day, month, and year, and local time zone offset
-$PAIR062,6,1
+$PAIR062,6,1*39
 
 #Enable NMEA GRS GRS range residuals
-$PAIR062,7,1
+$PAIR062,7,1*38
 
 #Enable NMEA GST Position error statistics
-$PAIR062,8,1
+$PAIR062,8,1*37

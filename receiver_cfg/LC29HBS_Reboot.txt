@@ -1,9 +1,9 @@
 #Power off the GNSS
-$PAIR003
+$PAIR003*39
 
 #SLEEP# 1000
 
 #Power on the GNSS
-$PAIR002
+$PAIR002*38
 
 #SLEEP# 5000
