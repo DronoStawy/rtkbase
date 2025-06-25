@@ -803,7 +803,7 @@ main() {
   ARG_START_SERVICES=0
   ARG_ZEROCONF=0
   ARG_ALL=0
-  ARG_WAVESHARE_RTK=0
+  WAVESHARE_RTK=0
 
   PARSED_ARGUMENTS=$(getopt --name install --options hu:drbi:jf:qtgencmsza: --longoptions help,user:,dependencies,rtklib,rtkbase-release,rtkbase-repo:,rtkbase-bundled,rtkbase-custom:,rtkbase-requirements,unit-files,gpsd-chrony,detect-gnss,no-write-port,configure-gnss,detect-modem,start-services,zeroconf,all,waveshare_rtk: -- "$@")
   VALID_ARGUMENTS=$?
@@ -836,7 +836,6 @@ main() {
         -s | --start-services) ARG_START_SERVICES=1    ; shift   ;;
         -z | --zeroconf) ARG_ZEROCONF=1                ; shift   ;;
         -a | --all) ARG_ALL="${2}"                     ; shift 2 ;;
-        -w | --waveshare_rtk) ARG_WAVESHARE_RTK=1      ; shift   ;;
         # -- means the end of the arguments; drop this, and break out of the while loop
         --) shift; break ;;
         # If invalid options were passed, then getopt should have reported an error,
@@ -852,7 +851,7 @@ main() {
   if [ $ARG_ALL != 0 ] 
   then
     # test if rtkbase source option is correct
-    [[ ' release repo url bundled'  =~ (^|[[:space:]])$ARG_ALL($|[[:space:]]) ]] || { echo 'wrong option, please choose release, repo, url or bundled' ; exit 1 ;}
+    [[ ' release repo url bundled waveshare_rtk'  =~ (^|[[:space:]])$ARG_ALL($|[[:space:]]) ]] || { echo 'wrong option, please choose release, repo, url or bundled' ; exit 1 ;}
     [[ $ARG_ALL == 'repo' ]] && [[ "${ARG_RTKBASE_REPO}" == "0" ]] && { echo 'you have to specify the branch with --rtkbase-repo' ; exit 1 ;}
     [[ $ARG_ALL == 'url' ]] && [[ "${ARG_RTKBASE_SRC}" == "0" ]] && { echo 'you have to specify the url with --rtkbase-custom' ; exit 1 ;}
     #Okay launching installation
@@ -871,6 +870,11 @@ main() {
         # https://www.matteomattei.com/create-self-contained-installer-in-bash-that-extracts-archives-and-perform-actitions/
         install_rtkbase_bundled
         ;;
+      waveshare_rtk)
+        # Waveshare RTK receiver configuration
+        WAVESHARE_RTK=1 && \
+        install_rtkbase_from_release
+        ;;
     esac                      && \
     rtkbase_requirements      && \
     install_rtklib            && \
@@ -879,7 +883,7 @@ main() {
     ret=$?
     [[ $ret != 0 ]] && ((cumulative_exit+=ret))
     # Add option to skip GNSS detection and configuration and go straight to Hat configuration
-    if [ $ARG_WAVESHARE_RTK ]
+    if [ $WAVESHARE_RTK -eq 1 ]
     then
       congigure_waveshare_rtk && ((cumulative_exit+=$?))
     else
