@@ -82,6 +82,8 @@ man_help(){
     echo ''
     echo '        -h | --help'
     echo '                          Display this help message.'
+    echo ''
+    echo '        -w | --wavesahre-rtk'
 
     exit 0
 }
@@ -638,6 +640,37 @@ configure_gnss(){
       fi
 }
 
+congigure_waveshare_rtk() {
+  echo '################################'
+  echo 'CONFIGURE WAVESHARE RTK RECEIVER'
+  echo '################################'
+  if [ -d "${rtkbase_path}" ]
+  then
+    source <( grep -v '^#' "${rtkbase_path}"/settings.conf | grep '=' ) 
+    systemctl is-active --quiet str2str_tcp.service && sudo systemctl stop str2str_tcp.service
+    # Factory reset and configure the module
+    # Waveshare RTK receiver on /dev/serial0 with default baudrate 115200
+    python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Factory_Defaults.txt /dev/serial0 115200 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+    python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Set_Baud.txt /dev/serial0 115200 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+    python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Save.txt /dev/serial0 115200 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+    python3 "${rtkbase_path}"/tools/nmea.py --verbose --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Reboot.txt /dev/serial0 115200 3 >>"${rtkbase_path}"/logs/LC29HBS_Configure.log && \
+
+    # Speed has now been configured to 921600
+    speed=921600
+    version_str="$(python3 "${rtkbase_path}"/tools/nmea.py --file "${rtkbase_path}"/receiver_cfg/LC29HBS_Version.txt /dev/serial0 ${speed} 3 2>/dev/null)"
+    firmware="`echo "$version_str" | cut -d , -f 2`"
+    if [[ -z "$version_str" ]]; then
+      echo "Could not get LC29HBS version string after rebooting the module, try power cycling the module."
+      return 1
+    fi
+    sudo -u "${RTKBASE_USER}" sed -i s/^receiver_firmware=.*/receiver_firmware=\'${firmware}\'/ "${rtkbase_path}"/settings.conf && \
+    sudo -u "${RTKBASE_USER}" sed -i s/^com_port_settings=.*/com_port_settings=\'921600:8:n:1\'/ "${rtkbase_path}"/settings.conf && \
+    sudo -u "${RTKBASE_USER}" sed -i s/^receiver=.*/receiver=\'Quectel LC29HBS\'/ "${rtkbase_path}"/settings.conf && \
+    sudo -u "${RTKBASE_USER}" sed -i s/^receiver_format=.*/receiver_format=\'rtcm3\'/ "${rtkbase_path}"/settings.conf
+    return $?
+  fi
+}
+
 detect_usb_modem() {
     echo '################################'
     echo 'SIMCOM A76XX LTE MODEM DETECTION'
@@ -770,8 +803,9 @@ main() {
   ARG_START_SERVICES=0
   ARG_ZEROCONF=0
   ARG_ALL=0
+  ARG_WAVESHARE_RTK=0
 
-  PARSED_ARGUMENTS=$(getopt --name install --options hu:drbi:jf:qtgencmsza: --longoptions help,user:,dependencies,rtklib,rtkbase-release,rtkbase-repo:,rtkbase-bundled,rtkbase-custom:,rtkbase-requirements,unit-files,gpsd-chrony,detect-gnss,no-write-port,configure-gnss,detect-modem,start-services,zeroconf,all: -- "$@")
+  PARSED_ARGUMENTS=$(getopt --name install --options hu:drbi:jf:qtgencmsza: --longoptions help,user:,dependencies,rtklib,rtkbase-release,rtkbase-repo:,rtkbase-bundled,rtkbase-custom:,rtkbase-requirements,unit-files,gpsd-chrony,detect-gnss,no-write-port,configure-gnss,detect-modem,start-services,zeroconf,all,waveshare_rtk: -- "$@")
   VALID_ARGUMENTS=$?
   if [ "$VALID_ARGUMENTS" != "0" ]; then
     #man_help
@@ -802,6 +836,7 @@ main() {
         -s | --start-services) ARG_START_SERVICES=1    ; shift   ;;
         -z | --zeroconf) ARG_ZEROCONF=1                ; shift   ;;
         -a | --all) ARG_ALL="${2}"                     ; shift 2 ;;
+        -w | --waveshare_rtk) ARG_WAVESHARE_RTK=1      ; shift   ;;
         # -- means the end of the arguments; drop this, and break out of the while loop
         --) shift; break ;;
         # If invalid options were passed, then getopt should have reported an error,
@@ -843,8 +878,14 @@ main() {
     install_gpsd_chrony
     ret=$?
     [[ $ret != 0 ]] && ((cumulative_exit+=ret))
-    detect_gnss               && \
-    configure_gnss
+    # Add option to skip GNSS detection and configuration and go straight to Hat configuration
+    if [ $ARG_WAVESHARE_RTK ]
+    then
+      congigure_waveshare_rtk && ((cumulative_exit+=$?))
+    else
+      detect_gnss               && \
+      configure_gnss
+    fi
     start_services ; ((cumulative_exit+=$?))
     [[ $cumulative_exit != 0 ]] && echo -e '\n\n Warning! Some errors happened during installation!'
     exit $cumulative_exit
